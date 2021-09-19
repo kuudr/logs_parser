@@ -68,7 +68,7 @@ class Parser
 $parser = new Parser();
 $parser->parseData();
 
-echo JsonResponse::jsonResponse(
+echo JsonFormatter::jsonResponse(
     $parser->dto()->views(),
     $parser->dto()->urls(),
     $parser->dto()->traffics(),

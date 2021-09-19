@@ -2,7 +2,7 @@
 
 namespace Src;
 
-class JsonResponse
+class JsonFormatter
 {
     /**
      * @param int $views
