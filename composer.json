@@ -1,0 +1,9 @@
+{
+    "name": "kdr/parser",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Src\\": "src/"
+        }
+    }
+}
