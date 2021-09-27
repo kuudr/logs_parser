@@ -2,77 +2,79 @@
 
 namespace Src;
 
-require '../vendor/autoload.php';
+require 'JsonFormatter.php';
 
 class Parser
 {
-    private const LOGS_FILE = '../logs/logs';
+    private string $path;
 
-    private array $parsedData = [];
+    private array $views;
 
-    /**
-     * @return array
-     * @throws \Exception
-     */
-    private function getLogs(): array
+    private array $uniqueUrls;
+
+    private array $statusCodes;
+
+    private array $traffics;
+
+    private array $crawlers;
+
+
+    public function __construct(string $path)
     {
-        $lines = [];
-
-        $logsFile = file(self::LOGS_FILE);
-
-        if (!$logsFile) {
-            throw new \Exception('Something went wrong while getting file');
-        }
-
-        foreach ($logsFile as $parts) {
-            $lines[] = explode('"', $parts);
-        }
-
-        return $lines;
+        $this->path = $path;
     }
 
 
     /**
-     * @return array
      * @throws \Exception
      */
-    public function parseData(): array
+    private function parseData(): void
     {
-        $data = [];
-        foreach ($this->getLogs() as $log) {
-            $data['urls'][] = $log[3];
-            $data['views'] = count($this->getLogs());
-            $data['traffics'][] = substr($log[2], 4);
-            $statusCode = substr($log[2], 1, 3);
-            $data['status_codes'][$statusCode][] = $statusCode;
+        $statusCode = '';
+        $crawlers = '';
+
+        $handle = @fopen($this->path, "r");
+        if ($handle) {
+
+            $this->statusCodes[] = $statusCode;
+            $this->crawlers[] = $crawlers;
+
+            while (($buffer = fgets($handle, 4096)) !== false) {
+                $explode = explode('"', $buffer);
+                $statusCode = substr($explode[2], 1, 3);
+                $traffics = substr($explode[2], 4);
+                preg_match('/\)\s\w+/', $explode[5], $crawlersArr);
+
+                $this->views[] = $explode;
+                $this->uniqueUrls[] = $explode[3];
+                $this->statusCodes[$statusCode]++;
+                $this->traffics[$traffics] = $traffics;
+                foreach ($crawlersArr as $crawler) {
+                    $this->crawlers[str_replace(') ', '', $crawler)]++;
+                }
+            }
+
+            if (!feof($handle)) {
+                throw new \Exception('Something went wrong while getting file');
+            }
+            fclose($handle);
         }
-
-        return $this->parsedData = $data;
-
     }
 
     /**
-     * @return ParserDto
+     * @return string
+     * @throws \Exception
      */
-    public function dto(): ParserDto
+    public function jsonResponse(): string
     {
-        return new ParserDto(
-            $this->parsedData['views'],
-            $this->parsedData['status_codes'],
-            $this->parsedData['urls'],
-            $this->parsedData['traffics'],
+        $this->parseData();
+
+        return JsonFormatter::jsonResponse(
+            count($this->views),
+            count(array_unique($this->uniqueUrls)),
+            array_sum($this->traffics),
+            $this->statusCodes,
+            $this->crawlers,
         );
     }
 }
-
-$parser = new Parser();
-$parser->parseData();
-
-echo JsonFormatter::jsonResponse(
-    $parser->dto()->views(),
-    $parser->dto()->urls(),
-    $parser->dto()->traffics(),
-    $parser->dto()->statusCodes(),
-
-);
-
